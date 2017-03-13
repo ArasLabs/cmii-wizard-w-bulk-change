@@ -1,6 +1,5 @@
 ﻿<AML>
  <Item type="Form" id="DE6BEC40660B499AB3E71AB7055B3243" action="add">
-  <classification>/*</classification>
   <description>CMII Affected Items Wizard Dialog</description>
   <height>640</height>
   <name>CMII Affected Items Wizard</name>
@@ -8,14 +7,12 @@
   <width>875</width>
   <Relationships>
    <Item type="Body" id="AF7837A4CE9848ECAD1B1FA282616A4B" action="add">
-    <classification>/*</classification>
     <sort_order>128</sort_order>
     <source_id keyed_name="CMII Affected Items Wizard" type="Form">DE6BEC40660B499AB3E71AB7055B3243</source_id>
     <Relationships>
      <Item type="Field" id="7E5FB7F4C887483E9C7834020C23F788" action="add">
       <bg_color>#FFFFFF</bg_color>
       <border_width>0</border_width>
-      <classification>/*</classification>
       <field_type>html</field_type>
       <font_color>#000000</font_color>
       <font_family>arial, helvetica, sans-serif</font_family>
@@ -58,6 +55,8 @@
 04.08.2009 peter  Changes for 9.1.  Add Simple-ECO itemtype,  and update UI.
 02.24.2010 Dennis Lindinger (Razorleaf) - Changes for Spartan to perform bulk change
                                             and speed performance of where used tab
+06.07.2013 Jeff Skebo (Razorleaf)	- updated to work with 9.3
+									- now sets active item (for the tree) when selecting from part via findToItem search box
 ==========================================================================================
 -->
 <html>
@@ -644,12 +643,14 @@ function updateToItem (Item) {
     
     if (ActiveToFrom == "To:") {
         toItem = Item;
-        document.all.toBox.value = Item.getProperty("item_number");            
+        document.all.toBox.value = Item.getProperty("item_number");
     }
     else
     {
         fromItem = Item;
-        document.all.fromBox.value = Item.getProperty("item_number");                    
+        document.all.fromBox.value = Item.getProperty("item_number");
+//JMS - sets active item for tree only when selecting from item
+		loadItem(Item);
     }
     return;
 }
@@ -1550,7 +1551,7 @@ function onMenuNot(id,r,c) {
 
 <script language="jscript" for="toolbar" event="Onload()">
   toolbarControl = document.toolbar;
-  toolbarControl.setImageBase("../cbin/");
+  //toolbarControl.setImageBase("../cbin/");		JMS commented out for Aras 9.3
   toolbarControl.loadToolbarFromStr('<toolbarapplet bgcolor="#d4d0c8" on_click="onToolbarClick" buttonstyle="windows" buttonsize="26,22" top_border="0" bottom_border="1" font="Arial-8"><toolbar id="main"><choice id="mode" size="12" font="Arial-8"></choice><separator/><edit id="item" label="Lookup:" text="" size="20" font="Arial-8"/><separator/><choice id="type" size="15" font="Arial-8"></choice><separator/><button image="icons/20x20keysearch.gif" id="findItem" tooltip="New Search" statusmsg="Search for a Part/Document"></button><separator/><choice id="toFrom" size="12" font="Arial-8"></choice><edit id="toItem" text="" size="20" font="Arial-8"/><button image="icons/20x20keysearch.gif" id="findToItem" tooltip="New To Item Search" statusmsg="Search for to item"></button><separator/><button image="../images/icons/20x20/20x20_checkmark.gif" id="save" tooltip="Save Changes and Exit" statusmsg="Save Changes and Exit"></button><button image="../images/icons/20x20/20x20_exit_door.gif" id="exit" tooltip="Exit Without Saving"  statusmsg="Exit Without Saving"></button></toolbar></toolbarapplet>');
 
   toolbarControl.show();

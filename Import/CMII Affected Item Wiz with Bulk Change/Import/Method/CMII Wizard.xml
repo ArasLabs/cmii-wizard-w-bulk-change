@@ -1,11 +1,12 @@
 ﻿<AML>
  <Item type="Method" id="A301299C3E404AC192E81A258D252247" action="add">
-  <classification>/*</classification>
   <execution_allowed_to keyed_name="World" type="Identity">A73B655731924CD0B027E4F4D5FCC0A9</execution_allowed_to>
   <method_code><![CDATA[// CMII wizard opener
 // 10.17.2006   peter
 // 09.12.2007
 // =====================================================================
+//debugger;
+
 var myInnovator = document.frames[1].document.thisItem.newInnovator();
 
 // 1) Open a form with the controls and fields that are needed

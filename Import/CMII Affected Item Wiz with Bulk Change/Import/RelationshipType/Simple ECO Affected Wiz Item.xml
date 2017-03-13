@@ -2,7 +2,6 @@
  <Item type="RelationshipType" id="8E878FD3B9524B89B30F8C252B89FD02" action="add" dependencyLevel="0">
   <auto_search>1</auto_search>
   <behavior>float</behavior>
-  <classification>/*</classification>
   <copy_permissions>0</copy_permissions>
   <create_related>0</create_related>
   <hide_in_all>1</hide_in_all>
@@ -34,7 +33,6 @@
     <use_src_access>1</use_src_access>
     <Relationships>
      <Item type="Property" id="C4A4B3507CDC438B87E4D8C0C5D0D201" action="add">
-      <classification>/*</classification>
       <column_alignment>left</column_alignment>
       <data_source keyed_name="Affected Item Wizard Actions">A3ECFF078DE943DBBFE51A9A4D5CBB95</data_source>
       <data_type>list</data_type>
@@ -57,6 +55,26 @@
   </relationship_id>
   <sort_order>500</sort_order>
   <source_id keyed_name="Simple ECO" type="ItemType" name="Simple ECO">05C2AC1EB54742FF95CBB12FE12F5EDB</source_id>
+ </Item>
+ <Item type="ItemType" id="E1CF10FDCAD642B0AF39F64AE97AA0AB" action="edit">
+  <Relationships>
+   <Item type="Property" action="edit" where="source_id='E1CF10FDCAD642B0AF39F64AE97AA0AB' and name='generation'">
+    <column_alignment>left</column_alignment>
+    <data_type>integer</data_type>
+    <is_hidden>1</is_hidden>
+    <is_hidden2>1</is_hidden2>
+    <is_indexed>0</is_indexed>
+    <is_keyed>0</is_keyed>
+    <is_multi_valued>0</is_multi_valued>
+    <is_required>0</is_required>
+    <name>generation</name>
+    <range_inclusive>0</range_inclusive>
+    <readonly>1</readonly>
+    <sort_order>2944</sort_order>
+    <source_id keyed_name="Simple ECO Affected Wiz Item" type="ItemType" name="Simple ECO Affected Wiz Item">E1CF10FDCAD642B0AF39F64AE97AA0AB</source_id>
+    <track_history>0</track_history>
+   </Item>
+  </Relationships>
  </Item>
  <Item type="View" action="delete" where="source_id='E1CF10FDCAD642B0AF39F64AE97AA0AB'"></Item>
  <Item type="Form" action="delete" where="name='Simple ECO Affected Wiz Item'"></Item>

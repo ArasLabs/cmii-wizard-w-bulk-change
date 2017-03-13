@@ -2,7 +2,6 @@
  <Item type="RelationshipType" id="6ADCEB86424C4EF18A18616BD515AF79" action="add" dependencyLevel="0">
   <auto_search>1</auto_search>
   <behavior>float</behavior>
-  <classification>/*</classification>
   <copy_permissions>0</copy_permissions>
   <create_related>0</create_related>
   <hide_in_all>1</hide_in_all>
@@ -42,7 +41,6 @@
      </Item>
     
      <Item type="Property" id="01D3AC93F0F4479F8628BC309F5A1F17" action="add">
-      <classification>/*</classification>
       <column_alignment>left</column_alignment>
       <data_source keyed_name="Affected Item Wizard Actions">A3ECFF078DE943DBBFE51A9A4D5CBB95</data_source>
       <data_type>list</data_type>
@@ -61,7 +59,6 @@
       <track_history>0</track_history>
       <Relationships>
        <Item type="Grid Event" id="D139916826504B45A1843AF5B52483B8" action="add">
-        <classification>/*</classification>
         <grid_event>onsearchdialog</grid_event>
         <related_id keyed_name="CMII Wizard Dialog Filter" type="Method">
          <Item type="Method" action="get" select="id">
@@ -77,6 +74,26 @@
   </relationship_id>
   <sort_order>512</sort_order>
   <source_id keyed_name="ECR" type="ItemType" name="ECR">2D4799413792453DA08C1EDE6AA22A76</source_id>
+ </Item>
+ <Item type="ItemType" id="20DA1961A6554E32830C5E7CCDBBB8E1" action="edit">
+  <Relationships>
+   <Item type="Property" action="edit" where="source_id='20DA1961A6554E32830C5E7CCDBBB8E1' and name='generation'">
+    <column_alignment>left</column_alignment>
+    <data_type>integer</data_type>
+    <is_hidden>1</is_hidden>
+    <is_hidden2>1</is_hidden2>
+    <is_indexed>0</is_indexed>
+    <is_keyed>0</is_keyed>
+    <is_multi_valued>0</is_multi_valued>
+    <is_required>0</is_required>
+    <name>generation</name>
+    <range_inclusive>0</range_inclusive>
+    <readonly>1</readonly>
+    <sort_order>2944</sort_order>
+    <source_id keyed_name="ECR Affected Wizard Item" type="ItemType" name="ECR Affected Wizard Item">20DA1961A6554E32830C5E7CCDBBB8E1</source_id>
+    <track_history>0</track_history>
+   </Item>
+  </Relationships>
  </Item>
  <Item type="View" action="delete" where="source_id='20DA1961A6554E32830C5E7CCDBBB8E1'"></Item>
  <Item type="Form" action="delete" where="name='ECR Affected Wizard Item'"></Item>

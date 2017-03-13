@@ -17,12 +17,14 @@ Release notes/descriptions for the original project posted on the previous Aras 
 
 Release | Notes
 --------|--------
+[v2.2](https://github.com/ArasLabs/cmii-wizard-w-bulk-change/releases/tag/v2.2) | Update For 9.4
 [v1.0](https://github.com/ArasLabs/cmii-wizard-w-bulk-change/releases/tag/v1.0) | Initial version
 
 #### Supported Aras Versions
 
 Project | Aras
 --------|------
+[v2.2](https://github.com/ArasLabs/cmii-wizard-w-bulk-change/releases/tag/v2.2) | Aras 9.4
 [v1.0](https://github.com/ArasLabs/cmii-wizard-w-bulk-change/releases/tag/v1.0) | Aras 9.3
 
 > ###### *Please note: Aras Community Projects are provided on an "as-is" basis.*

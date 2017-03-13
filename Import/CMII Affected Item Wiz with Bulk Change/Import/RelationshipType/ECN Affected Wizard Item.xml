@@ -2,7 +2,6 @@
  <Item type="RelationshipType" id="C0E4FE4D2D9C41E2BF96D8DB72485554" action="add" dependencyLevel="0">
   <auto_search>1</auto_search>
   <behavior>float</behavior>
-  <classification>/*</classification>
   <copy_permissions>0</copy_permissions>
   <create_related>0</create_related>
   <hide_in_all>1</hide_in_all>
@@ -36,7 +35,6 @@
     <use_src_access>1</use_src_access>
     <Relationships>
      <Item type="Property" id="4686808F460441BE98A2BCCE42138E6F" action="add">
-      <classification>/*</classification>
       <column_alignment>left</column_alignment>
       <data_source keyed_name="Affected Item Wizard Actions">A3ECFF078DE943DBBFE51A9A4D5CBB95</data_source>
       <data_type>list</data_type>
@@ -59,6 +57,26 @@
   </relationship_id>
   <sort_order>512</sort_order>
   <source_id keyed_name="ECN" type="ItemType" name="ECN">85F86794FACF42599F07019F7BEA1D46</source_id>
+ </Item>
+ <Item type="ItemType" id="98E621BA93A5487D9468AE0D8F6FF31A" action="edit">
+  <Relationships>
+   <Item type="Property" action="edit" where="source_id='98E621BA93A5487D9468AE0D8F6FF31A' and name='generation'">
+    <column_alignment>left</column_alignment>
+    <data_type>integer</data_type>
+    <is_hidden>1</is_hidden>
+    <is_hidden2>1</is_hidden2>
+    <is_indexed>0</is_indexed>
+    <is_keyed>0</is_keyed>
+    <is_multi_valued>0</is_multi_valued>
+    <is_required>0</is_required>
+    <name>generation</name>
+    <range_inclusive>0</range_inclusive>
+    <readonly>1</readonly>
+    <sort_order>2944</sort_order>
+    <source_id keyed_name="ECN Affected Wizard Item" type="ItemType" name="ECN Affected Wizard Item">98E621BA93A5487D9468AE0D8F6FF31A</source_id>
+    <track_history>0</track_history>
+   </Item>
+  </Relationships>
  </Item>
  <Item type="View" action="delete" where="source_id='98E621BA93A5487D9468AE0D8F6FF31A'"></Item>
  <Item type="Form" action="delete" where="name='ECN Affected Wizard Item'"></Item>

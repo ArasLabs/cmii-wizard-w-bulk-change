@@ -1,0 +1,124 @@
+﻿<AML>
+ <Item type="RelationshipType" id="2C9744EF56A844728736283C2F3B1D2A" action="add" dependencyLevel="0">
+  <auto_search>1</auto_search>
+  <behavior>float</behavior>
+  <classification>/*</classification>
+  <copy_permissions>0</copy_permissions>
+  <create_related>0</create_related>
+  <hide_in_all>0</hide_in_all>
+  <inc_rel_key_name>1</inc_rel_key_name>
+  <inc_related_key_name>1</inc_related_key_name>
+  <is_list_type>0</is_list_type>
+  <label xml:lang="en">Bulk Change Replacements</label>
+  <name>Affected Item Bulk Change</name>
+  <new_show_related>0</new_show_related>
+  <related_notnull>0</related_notnull>
+  <related_option>2</related_option>
+  <relationship_id keyed_name="Affected Item Bulk Change" type="ItemType" name="Affected Item Bulk Change">
+   <Item type="ItemType" id="368A18BE1572492A93DB79202369F569" action="add">
+    <allow_private_permission>1</allow_private_permission>
+    <auto_search>0</auto_search>
+    <enforce_discovery>0</enforce_discovery>
+    <hide_where_used>0</hide_where_used>
+    <implementation_type>table</implementation_type>
+    <instance_data>AFFECTED_ITEM_BULK_CHANGE</instance_data>
+    <is_dependent>1</is_dependent>
+    <is_relationship>1</is_relationship>
+    <is_versionable>0</is_versionable>
+    <manual_versioning>0</manual_versioning>
+    <name>Affected Item Bulk Change</name>
+    <revisions keyed_name="Default" type="Revision">7FE395DD8B9F4E1090756A34B733D75E</revisions>
+    <show_parameters_tab>1</show_parameters_tab>
+    <unlock_on_logout>0</unlock_on_logout>
+    <use_src_access>1</use_src_access>
+    <Relationships>
+     <Item type="Allowed Permission" id="BE70A9A37D794D8F83EDA857A4AFA851" action="add">
+      <is_default>1</is_default>
+      <related_id keyed_name="Administrators" type="Permission">5BE54C871FB14F6EBC11596D1A010D26</related_id>
+      <sort_order>128</sort_order>
+      <source_id keyed_name="Affected Item Bulk Change" type="ItemType" name="Affected Item Bulk Change">368A18BE1572492A93DB79202369F569</source_id>
+     </Item>
+    
+     <Item type="Can Add" id="5A4D9BEB6CA841E48EEFBC97748F48D2" action="add">
+      <can_add>1</can_add>
+      <related_id keyed_name="Administrators" type="Identity">2618D6F5A90949BAA7E920D1B04C7EE1</related_id>
+      <sort_order>128</sort_order>
+      <source_id keyed_name="Affected Item Bulk Change" type="ItemType" name="Affected Item Bulk Change">368A18BE1572492A93DB79202369F569</source_id>
+     </Item>
+     <Item type="Property" id="16A77DD358A04E169085C969FE2990E2" action="add">
+      <classification>/*</classification>
+      <column_alignment>left</column_alignment>
+      <data_source keyed_name="Part" type="ItemType" name="Part">4F1AC04A2B484F3ABA4E20DB63808A88</data_source>
+      <data_type>item</data_type>
+      <is_hidden>0</is_hidden>
+      <is_hidden2>0</is_hidden2>
+      <is_indexed>0</is_indexed>
+      <is_keyed>0</is_keyed>
+      <is_multi_valued>0</is_multi_valued>
+      <is_required>0</is_required>
+      <item_behavior>float</item_behavior>
+      <label xml:lang="en">Replace From</label>
+      <name>replace_from</name>
+      <range_inclusive>0</range_inclusive>
+      <readonly>0</readonly>
+      <sort_order>3456</sort_order>
+      <source_id keyed_name="Affected Item Bulk Change" type="ItemType" name="Affected Item Bulk Change">368A18BE1572492A93DB79202369F569</source_id>
+      <track_history>0</track_history>
+     </Item>
+     <Item type="Property" id="DF04A0AE339341479864371C9E7B8DC9" action="add">
+      <classification>/*</classification>
+      <column_alignment>left</column_alignment>
+      <data_source keyed_name="Part" type="ItemType" name="Part">4F1AC04A2B484F3ABA4E20DB63808A88</data_source>
+      <data_type>item</data_type>
+      <is_hidden>0</is_hidden>
+      <is_hidden2>0</is_hidden2>
+      <is_indexed>0</is_indexed>
+      <is_keyed>0</is_keyed>
+      <is_multi_valued>0</is_multi_valued>
+      <is_required>0</is_required>
+      <item_behavior>float</item_behavior>
+      <label xml:lang="en">Replace To</label>
+      <name>replace_to</name>
+      <range_inclusive>0</range_inclusive>
+      <readonly>0</readonly>
+      <sort_order>3584</sort_order>
+      <source_id keyed_name="Affected Item Bulk Change" type="ItemType" name="Affected Item Bulk Change">368A18BE1572492A93DB79202369F569</source_id>
+      <track_history>0</track_history>
+     </Item>
+     <Item type="TOC Access" id="724ECF4F95DD4A9585E4A3B749CA0017" action="add">
+      <classification>/*</classification>
+      <related_id keyed_name="Administrators" type="Identity">2618D6F5A90949BAA7E920D1B04C7EE1</related_id>
+      <sort_order>128</sort_order>
+      <source_id keyed_name="Affected Item Bulk Change" type="ItemType" name="Affected Item Bulk Change">368A18BE1572492A93DB79202369F569</source_id>
+     </Item></Relationships>
+   </Item>
+  </relationship_id>
+  <sort_order>128</sort_order>
+  <source_id keyed_name="Affected Item" type="ItemType" name="Affected Item">BFAAB0F6838D4F80BF12CB328FF5B097</source_id>
+ </Item>
+ <Item type="ItemType" id="368A18BE1572492A93DB79202369F569" action="edit">
+  <Relationships>
+   <Item type="Property" action="edit" where="source_id='368A18BE1572492A93DB79202369F569' and name='related_id'">
+    <classification>/*</classification>
+    <column_alignment>left</column_alignment>
+    <data_type>item</data_type>
+    <is_hidden>0</is_hidden>
+    <is_hidden2>0</is_hidden2>
+    <is_indexed>0</is_indexed>
+    <is_keyed>0</is_keyed>
+    <is_multi_valued>0</is_multi_valued>
+    <is_required>0</is_required>
+    <item_behavior>float</item_behavior>
+    <label xml:lang="en">Related Id</label>
+    <name>related_id</name>
+    <range_inclusive>0</range_inclusive>
+    <readonly>0</readonly>
+    <sort_order>3712</sort_order>
+    <source_id keyed_name="Affected Item Bulk Change" type="ItemType" name="Affected Item Bulk Change">368A18BE1572492A93DB79202369F569</source_id>
+    <track_history>0</track_history>
+   </Item>
+  </Relationships>
+ </Item>
+ <Item type="View" action="delete" where="source_id='368A18BE1572492A93DB79202369F569'"></Item>
+ <Item type="Form" action="delete" where="name='Affected Item Bulk Change'"></Item>
+</AML>

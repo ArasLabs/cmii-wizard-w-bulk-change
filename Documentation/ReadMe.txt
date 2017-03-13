@@ -1,0 +1,1 @@
+This package includes all of the functionality of the CMII Affected Items Wizard with additional support for Bulk Change functionality.  Bulk Change functionality is defined as replacing part 123 with part 456 in assemblies that use part 123.  You can find more information at about this updated wizard at http://www.razorleaf.com/2010/06/enhanced-aras-cmii-wizard/.

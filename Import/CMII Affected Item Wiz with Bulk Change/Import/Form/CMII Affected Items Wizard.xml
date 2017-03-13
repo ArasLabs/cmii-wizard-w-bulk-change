@@ -1,0 +1,1744 @@
+﻿<AML>
+ <Item type="Form" id="DE6BEC40660B499AB3E71AB7055B3243" action="add">
+  <classification>/*</classification>
+  <description>CMII Affected Items Wizard Dialog</description>
+  <height>640</height>
+  <name>CMII Affected Items Wizard</name>
+  <stylesheet><![CDATA[../styles/default.css]]></stylesheet>
+  <width>875</width>
+  <Relationships>
+   <Item type="Body" id="AF7837A4CE9848ECAD1B1FA282616A4B" action="add">
+    <classification>/*</classification>
+    <sort_order>128</sort_order>
+    <source_id keyed_name="CMII Affected Items Wizard" type="Form">DE6BEC40660B499AB3E71AB7055B3243</source_id>
+    <Relationships>
+     <Item type="Field" id="7E5FB7F4C887483E9C7834020C23F788" action="add">
+      <bg_color>#FFFFFF</bg_color>
+      <border_width>0</border_width>
+      <classification>/*</classification>
+      <field_type>html</field_type>
+      <font_color>#000000</font_color>
+      <font_family>arial, helvetica, sans-serif</font_family>
+      <font_size>8pt</font_size>
+      <font_weight>bold</font_weight>
+      <html_code><![CDATA[<!-- (c) Copyright by Aras Corporation, 2004 - Company Confidential. -->
+
+<!--  Delphi CMII Affected Items Analysis Changes
+
+10-22-2004	peter/johnhutton		Initial implementation of the UI and data model per Delphi Spec.
+03-06-2005  peter                bolted onto the standard PLM 1.0 data model and forms
+											converted to IOM API model instead of top.aras functions (where possible)
+
+03-10-2005 peter   multi-select and implementation of Rule 1
+03-11-2005 update client cache
+04-01-2005 peter   change getUID() to use client-side temp id's to save many roundtrips.
+04-05-2005 peter  toolbar applet replaced with DHTML
+04-11-2005 peter  tabbar replaced with DHTML.  Fixed Save problem when things are re-assigned actions
+04-13-2005 peter  renamed the panel to Needs Review
+04-19-2005 peter  new Active header above tabs
+06-13-2005 peter  added right mouse View buttons
+------------------------------------------------------------------------------------------
+10.17.2006 Peter 	ported to 8.0
+						build as Package (install on top of PE)
+						move the Needs Review and Not Affected action items to a new relationship  "ECR Affected Wizard Item"
+10.19.2006 Peter  added is_current=1 to rule expansion
+10.20.2006 Peter  fixed bug on reloading an unsaved DOM with Needs Review entries
+09.12.2007 peter  moved from external HTML files to Internal Form
+						added check for De-select in main grid before executing actions
+						moved toolbar definition internal instead of external XML file
+
+01.25.2008 peter  fix double-click event on main grid and F2 in search
+03.25.2008 peter  changes for ITT to allow many ItemTypes and Many Change Items
+06.26.2008 peter  remove ITT specific ItemTypes.  Added link to ECN
+06.27.2008 peter  added better behaviors on the lookup.  tested for 8.2 and 9.0.1
+01.21.2009 peter  clean-up of No ItemType found error for unsaved Affected items
+						Tested for 9.0.2
+						Added automatic lookup of ChangeControlItems so Wizard is more dynamic
+
+04.08.2009 peter  Changes for 9.1.  Add Simple-ECO itemtype,  and update UI.
+02.24.2010 Dennis Lindinger (Razorleaf) - Changes for Spartan to perform bulk change
+                                            and speed performance of where used tab
+==========================================================================================
+-->
+<html>
+<head>
+<link rel="stylesheet" href="../styles/default.css">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<script>
+document.isEditMode=true;
+var win=dialogArguments.win;
+
+var isTree = false;
+var isAffectedTree = false;
+var isRequiredTree = false;
+var isNotTree = false;
+var treeControl = null;
+var affectedTreeControl = null;
+var requiredTreeControl = null;
+var notTreeControl = null;
+var toolbarControl=null;
+
+var ChangeItemTypes = new Object();
+
+top.aras    = dialogArguments.aras;
+var THIS    = dialogArguments.item;
+
+top.aras.uiAddConfigLink2Doc4Assembly(document, "Toolbar");
+top.aras.uiAddConfigLink2Doc4Assembly(document, "TreeTable");
+
+returnValue = false;
+innovator  	= THIS.newInnovator();
+
+var currItem= "";   // new for ITT
+var currType= "";   // new for ITT
+var currPart= "";
+var currDoc= "";
+var currNumber="";
+var currName="";
+var currTree="";
+var uniqueGridId=0;
+var currGrid =null;
+var currTabID="";
+var ChangeTypes="";
+var locked = false;
+var ActiveType="Part";
+//DAL
+var ActiveMode = "";
+var ActiveToFrom = "From:";
+var fromItem = null;
+var toItem = null;
+var bulkChangeExists = false;
+//DAL
+
+// IOM function for  THIS.isLocked()  is broken
+if (THIS.getProperty("locked_by_id","")== top.aras.getUserID()  ) locked=true;
+if (THIS.getAttribute("isTemp") == "1") locked=true;
+
+// 03/25/2008 -
+var ParentType = THIS.getType();
+// 04.08.2009
+var AffectedRelType = ParentType + " Affected Item";
+var AffectedWizardRelType = ParentType + " Affected Wizard Item";
+if (ParentType=='Simple ECO') AffectedWizardRelType = ParentType + " Affected Wiz Item"; // due to itemType name length limit
+
+//DAL
+	// ----  MAIN TREE -----------------------------------------------------
+var treeStyleIn = '';
+treeStyleIn += '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">';
+treeStyleIn += '	<xsl:output method="xml" indent="no" omit-xml-declaration="yes" />';
+treeStyleIn += '	<xsl:template match="/">';
+treeStyleIn += '   <table font="Microsoft Sans Serif-8" ';
+treeStyleIn += '       sel_bgColor="#0000ff"  ';
+treeStyleIn += '       editable="true" ';
+treeStyleIn += '       draw_grid="true" ';
+treeStyleIn += '       multiselect="true" ';
+treeStyleIn += '       expandroot="true" ';
+treeStyleIn += '       treelines="true" ';
+//DAL Adds beyond referencne
+treeStyleIn += '       delimiter="|" ';
+treeStyleIn += '       columndraggable="false" ';
+treeStyleIn += '       nosort="true" ';
+treeStyleIn += '       istree="true" ';
+//dal end adds beyond reference
+treeStyleIn += '       > ';
+treeStyleIn += '   <thead> ';
+treeStyleIn += '      <th bgColor="#d4d0c8" align="c">Hierarchy</th> ';
+treeStyleIn += '      <th bgColor="#d4d0c8" align="c">Type</th> ';
+treeStyleIn += '      <th bgColor="#d4d0c8" align="c">Action</th> ';
+treeStyleIn += '      <th bgColor="#d4d0c8" align="c">Description</th> ';
+treeStyleIn += '   </thead> ';
+treeStyleIn += '   <columns> ';
+treeStyleIn += '      <column width="173" edit="NOEDIT" align="l" order="0" /> ';
+treeStyleIn += '      <column width="67" edit="EDIT" align="l" order="1" /> ';
+treeStyleIn += '      <column width="90" edit="NOEDIT" align="c" order="2"/> ';
+treeStyleIn += '      <column width="150" edit="NOEDIT" align="l" order="3" /> ';
+treeStyleIn += '   </columns> ';
+treeStyleIn += '   <menu/> ';
+treeStyleIn += '  <xsl:for-each select="//Result/Item" >';
+treeStyleIn += '			<tr>';
+treeStyleIn += '        <xsl:attribute name="id"><xsl:value-of select="@gid"/></xsl:attribute> ';
+treeStyleIn += '			<td><xsl:value-of select="item_number"/></td>';
+treeStyleIn += '			<td><xsl:value-of select="id/@type"/></td>';
+treeStyleIn += '			<td> </td>';
+treeStyleIn += '			<td><xsl:value-of select="name"/></td>';
+treeStyleIn += '            <userdata key="id"><xsl:attribute name="value"><xsl:value-of select="@id"/></xsl:attribute></userdata>';
+treeStyleIn += '              <tr>';
+treeStyleIn += '                <xsl:attribute name="id"><xsl:value-of select="Relationships/Item/related_id/Item/@gid"/></xsl:attribute> ';
+treeStyleIn += '			    <td><xsl:value-of select="Relationships/Item/related_id/Item/item_number"/></td>';
+treeStyleIn += '			    <td><xsl:value-of select="Relationships/Item/related_id/Item/id/@type"/></td>';
+treeStyleIn += '			    <td> </td>';
+treeStyleIn += '			    <td><xsl:value-of select="Relationships/Item/related_id/Item/name"/></td>';
+treeStyleIn += '                <userdata key="id"><xsl:attribute name="value"><xsl:value-of select="Relationships/Item/related_id/Item/@id"/></xsl:attribute></userdata>';
+treeStyleIn += '              </tr>';
+treeStyleIn += '			</tr>';
+treeStyleIn += '	</xsl:for-each>';
+treeStyleIn += '  </table> ';
+treeStyleIn += '	</xsl:template>';
+treeStyleIn += '</xsl:stylesheet>';
+//dal
+
+
+// =====================================================================================
+
+//DAL
+// function to set ui based on mode
+function updateUi() {
+//debugger;
+    var tbToFrom = toolbarControl.getActiveToolbar().getElement("toFrom");
+    var tbMode = toolbarControl.getActiveToolbar().getElement("mode");
+    var tbToItem = toolbarControl.getActiveToolbar().getElement("toItem");
+    var tbFindToItem = toolbarControl.getActiveToolbar().getElement("findToItem");
+    var tbType = toolbarControl.getActiveToolbar().getElement("type");
+    ActiveToFrom = tbToFrom.getItem(tbToFrom.getSelectedIndex());
+    ActiveMode = tbMode.getItem(tbMode.getSelectedIndex());
+    
+    //if running on an ECR, set the mode to Revise and disable the control
+    if (ParentType == "ECR") {
+        ActiveMode = "Revise";
+        tbMode.setSelected("Revise");
+        tbMode.setEnabled(false);
+    }
+    else if (bulkChangeExists == true) {
+        ActiveMode = "Bulk Change";
+        tbMode.setSelected("Bulk Change");
+        tbMode.setEnabled(false);
+    }
+    
+    //change controls based on the active mode
+    if (ActiveMode == "Bulk Change") {
+        tbToFrom.setEnabled(true); 
+        tbToItem.setEnabled(true);
+        tbFindToItem.setEnabled(true);
+        tbType.setSelected("Part");
+        ActiveType = "Part";
+        tbType.setEnabled(false);
+    }
+    else
+    {
+        tbToFrom.setEnabled(false);
+        tbToItem.setEnabled(false);
+        tbFindToItem.setEnabled(false);
+        tbType.setEnabled(true);
+    }    
+    return;
+    
+    
+}
+//dal
+
+function affectedOnLoad() {    //fires when the last grid "notTree" is loaded and starts.
+
+//DAL - put the treeControl in multiselect. It looks like it was configured for multiselect before but not working.
+    treeControl.setMultiselect(true);
+//dal
+
+   if (!isTree && !isNotTree && !isRequiredTree && !isAffectedTree) {
+      alert('controls not ready');
+      return;
+   }
+   //  first 3 house keeping things...  fetch list of allowed Change Control Types,  The List and Icon definitions
+	var qry = THIS.newItem('Morphae','get');
+	qry.setProperty('source_id','198BF0BCCC364EE29F56434D803D5F1E');  // source = Change Controlled Items
+	qry.setAttribute('select','related_id(name,open_icon)');
+	var Result = qry.apply();
+	if (Result.isError() ) {
+		alert(Result.getErrorDetail() + ':  Unable to load a List of Change Controlled Items');
+		return;
+	}
+	var ChangeControlItems = Result.getItemsByXpath("//Item[@type='ItemType']");
+
+	var ChoiceList = toolbarControl.getActiveToolbar().getElement("type");
+
+	for (var i=0; i < ChangeControlItems.getItemCount(); i++) {
+		var typename = ChangeControlItems.getItemByIndex(i).getProperty("name","na");
+		var iconname = ChangeControlItems.getItemByIndex(i).getProperty("open_icon", "../images/Icons/16x16/16x16_redx.gif");
+
+		// load the value into a Hash object and load into the pull down list
+		ChangeItemTypes[typename] = iconname;
+
+		ChoiceList.add(typename);
+	}
+
+
+
+
+   // load the values for the pull-down list in the Affected TreeControl.
+	ChangeTypes="";
+	var qry = THIS.newItem();
+	qry.loadAML("<Item type='List' action='get' select='id'><name>Affected Item Actions</name><Relationships><Item type='Value' select='value, label,sort_order' order_by='sort_order'></Item></Relationships></Item>");
+	var Result = qry.apply();
+	if (Result.isError() ) {
+		alert(Result.getErrorDetail() + ':  Unable to load a required List "Affected Item Actions"');
+		return;
+	}
+	var Lists = Result.getItemsByXPath('//Item[@type="Value"]');
+	for (var i=0; i<Lists.getItemCount(); i++) {
+		var Tmp = Lists.getItemByIndex(i).getProperty("value"," ");
+		if (Tmp !="Needs Review" && Tmp !="Not Affected") ChangeTypes += Tmp + "|";
+	}
+
+   // now load the data from the Item.DOM of the ECR/ECN/Simple ECO form
+   // 10.18.2006 for v8,  need to force the ECR/ECN window to load the Relationship grid items into the DOM
+
+	// ask the server for a list of IDs of relatioships
+	// then check the dom to see if that id is loaded,
+	// if not,   call a function to load that relationship instance
+
+
+	var relQryItem = THIS.newItem('','');
+	
+	relQryItem.loadAML("<Item type='" + ParentType + "' action='get' id='" + THIS.getID() + "' select='id'><Relationships><Item type='" + AffectedRelType + "' action='get' select='id'></Item><Item type='" + AffectedWizardRelType + "' action='get' select='id'></Item></Relationships></Item>");
+	var relSet = relQryItem.apply();
+	if (relSet.isError() ){
+		// alert(relSet.getErrorDetail());
+	}
+	relSet = relSet.getItemsByXPath("//Item[@type='" + AffectedRelType + "']");
+	for (var i=0; i<relSet.getItemCount(); i++) {
+		var ID = relSet.getItemByIndex(i).getID();
+
+		// check if this is in the DOM
+		var Checker = THIS.getItemsByXPath("//Item[@id='" + THIS.getID() + "']/Relationships/Item[@id='" + ID +"']");
+		if (Checker.getItemCount()== 0 ) {
+			// ask the client to load this one into the DOM
+			 var aRel = top.aras.getItemRelationship(THIS.node, AffectedRelType, ID, true);
+			 if (!aRel) {
+					top.aras.AlertError('Failed to get the "' + AffectedRelType + '" item.');
+					return;
+			 }
+		}
+		
+			
+	}
+   // DOM now has all the rows of ECR/ECN Affected Item   loaded
+   // now Query the visible Affected Items with Add/Change/Delete Actions to load the Affected Items details (not in client dom yet
+	var Items = THIS.getItemsByXPath("//Item[@id='" + THIS.getID() + "']/Relationships/Item[@type='" + AffectedRelType + "']/related_id/Item[@type='Affected Item']");
+	for (var i=0; i < Items.getItemCount(); i++) 	{
+		var Item = Items.getItemByIndex(i);
+
+
+		var action 			= Item.getProperty("action");
+		var typeIcon		= Item.getProperty("affected_type");  // now is a Icon by default in 8.0.0
+		var id	= Item.getProperty("affected_id");
+		var type=Item.getPropertyAttribute("affected_id","type")
+
+		// handle the case where the data is not saved yet
+		if (type==undefined) {
+
+			var tmpItem = Item.getPropertyItem("affected_id")
+			if (tmpItem == null) continue;
+			type = tmpItem.getType();
+
+		}
+		var number  = " ";
+		var name    = " ";
+
+		var qryItem = THIS.newItem(type,'get');
+		qryItem.setID(id);
+		qryItem.setAttribute('select','item_number,itemtype,name');
+
+		var item = qryItem.apply();
+		if (item.isError() ){
+			alert(item.getErrorDetail());
+		} else {
+			if (item.getItemCount()>0 ) {
+				number = item.getItemByIndex(0).getProperty("item_number");
+				name   = item.getItemByIndex(0).getProperty("name");
+				type   = item.getItemByIndex(0).getType();
+			}
+			if (action=="Add" || action=="Change" || action=="Delete")  affectedTreeControl.addRow(id,type + "|"+ action + "|"+ number + "|"+ name,id);
+		
+		}
+	}
+
+   // Second - the Hidden structure of  Needs Review and Not Affected  affected items
+   // LOAD these items onto the DOM if the are not there yet.
+	relSet = relSet.getItemsByXPath("//Item[@type='" + AffectedWizardRelType + "']");
+	for (var i=0; i<relSet.getItemCount(); i++) {
+		var ID = relSet.getItemByIndex(i).getID();
+
+		// check if this is in the DOM
+		var Checker = THIS.getItemsByXPath("//Item[@id='" + THIS.getID() + "']/Relationships/Item[@id='" + ID +"']");
+		if (Checker.getItemCount()== 0 ) {
+			// ask the client to load this one into the DOM
+			 var aRel = top.aras.getItemRelationship(THIS.node, AffectedWizardRelType, ID, true);
+			 if (!aRel) {
+					top.aras.AlertError('Failed to get the "' + AffectedWizardRelType + '" item.');
+					return;
+			 }
+		}
+	}
+
+	var Items = THIS.getItemsByXPath("//Item[@id='" + THIS.getID() + "']/Relationships/Item[@type='" + AffectedWizardRelType + "']");
+	for (var i=0; i < Items.getItemCount(); i++) 	{
+		var RelItem = Items.getItemByIndex(i);
+		var Item = RelItem.getItemsByXPath("related_id/Item[@type='Affected Item']").getItemByIndex(0);
+
+		var action 			= RelItem.getProperty("action");
+		var typeIcon		= Item.getProperty("affected_type");  // now is a Icon by default in 8.0.0
+
+		var id	= Item.getProperty("affected_id");
+		var type=Item.getPropertyAttribute("affected_id","type")
+		var number  = " ";
+		var name    = " ";
+
+		var qryItem = THIS.newItem(type,'get');
+		qryItem.setID(id);
+		qryItem.setAttribute('select','item_number,itemtype,name');
+
+		var item = qryItem.apply();
+		if (item.isError() ){
+			alert(item.getErrorDetail());
+		} else {
+			if (item.getItemCount()>0 ) {
+				number = item.getItemByIndex(0).getProperty("item_number");
+				name   = item.getItemByIndex(0).getProperty("name");
+				type   = item.getItemByIndex(0).getType();
+			}
+			if (action=="Not Affected")  notTreeControl.addRow(id,type + "|"+ number + "|"+ name,id);
+			if (action=="Needs Review")  requiredTreeControl.addRow(id,type + "|"+ number + "|"+ name,id);
+		}
+	}
+	
+//DAL: Populate Mode dropdown list
+    var ModeChoiceList = toolbarControl.getActiveToolbar().getElement("mode");
+    ModeChoiceList.add("Revise");
+    ModeChoiceList.add("Bulk Change");
+    
+    var toFromChoiceList = toolbarControl.getActiveToolbar().getElement("toFrom");
+    toFromChoiceList.add("From:");
+    toFromChoiceList.add("To:");
+    //call updating of the UI controls
+    updateUi();     
+//dal	
+}
+// ============================================================================
+function saveExit(save) {
+	// logic:  1)  loop thru the DOM for ECR Affected Item and see if the same Item exists in the Wizard grids,
+	//					make updates as required
+	//
+	//			  2)	loop loop thru the DOM for ECR Affected Wizard Item and see if the same Item exists in the Wizard grids,
+	//					make updates as required
+	//
+	//			  3)  loop thru what is left in the grids, and create new DOM entries
+	//
+	// Note: will only save changes if the Item was locked by me
+
+	// terminate any pending edits
+	notTreeControl.turnEditOff();
+	requiredTreeControl.turnEditOff();
+	treeControl.turnEditOff();
+	affectedTreeControl.turnEditOff();
+	returnValue = false;
+
+	if (save && locked)  {
+		returnValue = true;
+		// loop thru existing DOM.  for each,  see if it is present in a tree
+		//  if yes,  may need to update the the Action and action flag
+		//  if no,  then flag for delete
+
+		// delete rows from the grids as you go.  The grids are the DB of proposed changes
+
+		// ----------- Step One -------------------------------------------------------------------
+		// now load the data from the Item.DOM of the ECR form,  ECR Affected Item Relationship
+		var Items = THIS.getItemsByXPath("//Item[@id='" + THIS.getID() + "']/Relationships/Item[@type='" + AffectedRelType + "']");
+
+		for (var i=0; i < Items.getItemCount(); i++) 	{
+			var RelItem = Items.getItemByIndex(i);
+			var Item    = RelItem.getItemsByXPath("related_id/Item[@type='Affected Item']").getItemByIndex(0);
+
+			var originalAction 	= Item.getProperty("action");
+			var type	 				= Item.getProperty("affected_type");
+			var id	 				= Item.getProperty("affected_id");
+
+
+			// if Item is found still in Affected Grid,  check for a change of Action
+			if (affectedTreeControl.isItemExists(id) ) {		
+				if (affectedTreeControl.cells(id,1).getValue() != originalAction ) {
+					// user changed the action pulled dont list
+					THIS.setAttribute("isDirty","1"); // set the CR as dirty
+					if (THIS.getAttribute("action") !="add") THIS.setAttribute("action","update");
+					Item.setProperty("action", affectedTreeControl.cells(id,1).getValue() );
+					Item.setAttribute("action","edit");
+					Item.setAttribute("isDirty","1");
+					RelItem.setAttribute("action","edit");
+					RelItem.setAttribute("isDirty","1");
+				}
+				affectedTreeControl.deleteRow(id);
+			}
+			// If the Item is in the notTree,  this is a change in Disposition,  delete from DOM,
+			// but leave in grid to become an Add in Pass 3
+			if (notTreeControl.isItemExists(id) ) {
+				// user changed his opinion this editing session
+				THIS.setAttribute("isDirty","1"); // set the CR as dirty
+				if (THIS.getAttribute("action") !="add") THIS.setAttribute("action","update");
+				RelItem.setAttribute("action","delete");
+				RelItem.setAttribute("isDirty","1");
+				// notTreeControl.deleteRow(id);  dont delete anymore,  use in Pass 3
+			}
+			// If the Item is in the review needed Tree,  this is a change in Disposition,  delete from DOM,
+			// but leave in grid to become an Add in Pass 3
+			if (requiredTreeControl.isItemExists(id) ) {
+				// user changed his opinion this editing session
+				THIS.setAttribute("isDirty","1"); // set the CR as dirty
+				if (THIS.getAttribute("action") !="add") THIS.setAttribute("action","update");
+				RelItem.setAttribute("action","delete");
+				RelItem.setAttribute("isDirty","1");
+				// requiredTreeControl.deleteRow(id);
+			}
+		}
+
+
+		// ------------ Step Two --------------------------------------------
+		// loop thru ECR Affected Wizard Item
+		// now load the data from the Item.DOM of the ECR form,  ECR Affected Wizard Item Relationship
+		var Items = THIS.getItemsByXPath("//Item[@id='" + THIS.getID() + "']/Relationships/Item[@type='" + AffectedWizardRelType + "']");
+		for (var i=0; i < Items.getItemCount(); i++) 	{
+			var RelItem = Items.getItemByIndex(i);
+			var Item    = RelItem.getItemsByXPath("related_id/Item[@type='Affected Item']").getItemByIndex(0);
+
+			var originalAction 	= RelItem.getProperty("action");
+			var type	 				= Item.getProperty("affected_type");
+			var id	 				= Item.getProperty("affected_id");
+
+			// if its now found in the AffectedTree,  user changed the designation, flag a delete in the DOM
+			if (affectedTreeControl.isItemExists(id) ) {
+				THIS.setAttribute("isDirty","1"); // set the ECR as dirty
+				if (THIS.getAttribute("action") !="add") THIS.setAttribute("action","update");
+				RelItem.setAttribute("action","delete");
+				RelItem.setAttribute("isDirty","1");
+  			   // affectedTreeControl.deleteRow(id);
+			}
+			// if found in the NotAffected Tree, check whether this is a change in disposition
+			if (notTreeControl.isItemExists(id) ) {
+				if (originalAction != 'Not Affected') {
+					// user changed his opinion this editing session
+					THIS.setAttribute("isDirty","1"); // set the ECR as dirty
+					if (THIS.getAttribute("action") !="add") THIS.setAttribute("action","update");
+					RelItem.setProperty("action", "Not Affected");
+					RelItem.setAttribute("action","edit");
+					RelItem.setAttribute("isDirty","1");
+				}
+				notTreeControl.deleteRow(id);
+			}
+			if (requiredTreeControl.isItemExists(id) ) {
+				if (originalAction != 'Needs Review') {
+					// user changed his opinion this editing session
+					THIS.setAttribute("isDirty","1"); // set the ECR as dirty
+					if (THIS.getAttribute("action") !="add") THIS.setAttribute("action","update");
+					RelItem.setProperty("action", "Needs Review");
+					RelItem.setAttribute("action","edit");
+					RelItem.setAttribute("isDirty","1");
+				}
+				requiredTreeControl.deleteRow(id);
+			}
+
+		}
+		// -----------  Step Three   ------------------------------------------------
+		//  now loop through the grids to see what is left,  these are Adds to the Client DOM
+
+		// new Affected Items
+		var rowid="";
+		var itemId="";
+		var ids =affectedTreeControl.getAllItemIds("|");
+		var id_array = ids.split("|");
+		for (var x = 0 ; x < id_array.length; x++) {
+			rowid = id_array[x];
+			if (rowid !="") {
+
+				THIS.setAttribute("isDirty","1"); // set the CR as dirty
+				if (THIS.getAttribute("action") !="add") THIS.setAttribute("action","update");
+				var myNewRelItem = innovator.newItem(AffectedRelType,'add');
+				myNewRelItem.setAttribute("isTemp","1");
+				myNewRelItem.setAttribute("isDirty","1");
+				var myNewItem = innovator.newItem('Affected Item','add');
+				myNewItem.setProperty('affected_type',affectedTreeControl.cells(rowid,0).getValue() );
+				myNewItem.setProperty('affected_id',rowid);
+				myNewItem.setProperty('action',affectedTreeControl.cells(rowid,1).getValue());
+				myNewItem.setAttribute("isTemp","1");
+				myNewItem.setAttribute("isDirty","1");
+				myNewItem.setPropertyAttribute("affected_id","keyed_name",affectedTreeControl.cells(rowid,2).getValue())
+				myNewItem.setPropertyAttribute("affected_id","type",affectedTreeControl.cells(rowid,0).getValue())
+
+				myNewItem.setProperty("affected_type","<img src='"+ ChangeItemTypes[affectedTreeControl.cells(rowid,0).getValue()] +"'>");
+
+				myNewRelItem.setPropertyItem('related_id',myNewItem);
+
+//DAL
+    //if the affected item has to/from info, add affected bulk change relationship record
+
+                var ToId = "";
+                var FromId = "";
+                ToId = affectedTreeControl.GetUserData(rowid,"ToId");
+                FromId = affectedTreeControl.GetUserData(rowid,"FromId");
+
+                if ((ToId !== undefined) && (FromId !== undefined)) {                
+                    myNewItem.setProperty('interchangeable', 1);
+                    var newBulkChangeRel = innovator.newItem("Affected Item Bulk Change", 'add');
+    				newBulkChangeRel.setAttribute("isTemp","1");
+    				newBulkChangeRel.setAttribute("isDirty","1");
+    				newBulkChangeRel.setProperty('replace_to', affectedTreeControl.GetUserData(rowid,"ToId"));
+    				newBulkChangeRel.setProperty('replace_from', affectedTreeControl.GetUserData(rowid,"FromId"));
+                    myNewItem.addRelationship(newBulkChangeRel);
+                }
+//dal				
+                THIS.addRelationship(myNewRelItem);
+				affectedTreeControl.deleteRow(rowid);
+			}
+		}
+		//  new Not Affected
+		ids =notTreeControl.getAllItemIds("|");
+		id_array = ids.split("|");
+		for (var x = 0 ; x < id_array.length; x++) {
+			rowid = id_array[x];
+			if (rowid !="") {
+				THIS.setAttribute("isDirty","1"); // set the ECR as dirty
+				if (THIS.getAttribute("action") !="add") THIS.setAttribute("action","update");
+				var myNewRelItem = innovator.newItem(AffectedWizardRelType,'add');
+				var myNewItem = innovator.newItem('Affected Item','add');
+				myNewRelItem.setProperty('action','Not Affected');
+				myNewItem.setProperty('affected_type',notTreeControl.cells(rowid,0).getValue() );
+				myNewItem.setProperty('affected_id',rowid);
+				myNewItem.setProperty('action','');
+				myNewItem.setPropertyAttribute("affected_id","keyed_name",notTreeControl.cells(rowid,2).getValue())
+				myNewItem.setPropertyAttribute("affected_id","type",notTreeControl.cells(rowid,0).getValue())
+
+				myNewItem.setProperty("affected_type","<img src='"+ ChangeItemTypes[notTreeControl.cells(rowid,0).getValue()] +"'>");
+
+				myNewRelItem.setPropertyItem('related_id',myNewItem);
+				THIS.addRelationship(myNewRelItem);
+				notTreeControl.deleteRow(rowid);
+			}
+		}
+		// new Needs Review items
+		ids =requiredTreeControl.getAllItemIds("|");
+		id_array = ids.split("|");
+		for (var x = 0 ; x < id_array.length; x++) {
+			rowid = id_array[x];
+			if (rowid !="") {
+				THIS.setAttribute("isDirty","1"); // set the ECR as dirty
+				if (THIS.getAttribute("action") !="add") THIS.setAttribute("action","update");
+				var myNewRelItem = innovator.newItem(AffectedWizardRelType,'add');
+				var myNewItem = innovator.newItem('Affected Item','add');
+				myNewRelItem.setProperty('action','Needs Review');
+				myNewItem.setProperty('affected_type',requiredTreeControl.cells(rowid,0).getValue() );
+				myNewItem.setProperty('affected_id',rowid);
+				myNewItem.setProperty('action','');
+				myNewItem.setPropertyAttribute("affected_id","keyed_name",requiredTreeControl.cells(rowid,2).getValue())
+				myNewItem.setPropertyAttribute("affected_id","type",requiredTreeControl.cells(rowid,0).getValue())
+
+				myNewItem.setProperty("affected_type","<img src='"+ ChangeItemTypes[requiredTreeControl.cells(rowid,0).getValue()] +"'>");
+
+				myNewRelItem.setPropertyItem('related_id',myNewItem);
+				THIS.addRelationship(myNewRelItem);
+				requiredTreeControl.deleteRow(rowid);
+			}
+		}
+	}
+   window.close();
+}
+
+
+//DAL
+function updateToItem (Item) {
+//alert("4 in updateToItem item_number=" + Item.getProperty("item_number"));
+    
+    if (ActiveToFrom == "To:") {
+        toItem = Item;
+        document.all.toBox.value = Item.getProperty("item_number");            
+    }
+    else
+    {
+        fromItem = Item;
+        document.all.fromBox.value = Item.getProperty("item_number");                    
+    }
+    return;
+}
+//dal
+
+
+function onToolbarClick(tbItem) {
+	var tbItemId = tbItem.getId();
+
+  	if (tbItemId == "exit") {
+		saveExit(false);
+		return;
+	}
+  	if (tbItemId == "save") {
+		saveExit(true);
+		return;
+	}       
+
+  	if (tbItemId == "findItem" || tbItemId == "findToItem") {
+		updateActiveType();
+//DAL: added if
+		if (tbItemId == "findItem") {
+            var searchStr = toolbarControl.getActiveToolbar().getElement('item').getText();
+   			toolbarControl.getActiveToolbar().getElement('item').setText("");
+		}
+		else
+		{
+            var searchStr = toolbarControl.getActiveToolbar().getElement('toItem').getText();     
+   			toolbarControl.getActiveToolbar().getElement('toItem').setText("");
+		}
+//dal
+		if (searchStr !="") {
+//DAL: moved the setText to the above if
+//			toolbarControl.getActiveToolbar().getElement('item').setText("");
+//
+			// see if this is a valid item
+			var qry = innovator.newItem();
+			qry.loadAML("<Item type='" + ActiveType + "' select='item_number,name' action='get'><is_current>1</is_current><or><item_number condition='like'>%" + searchStr + "%</item_number><name condition='like'>%" + searchStr + "%</name></or></Item>");
+
+			qry = qry.apply();
+			var Items = qry.getItemsByXPath("//Item[@type='" + ActiveType + "']");
+			if (Items.getItemCount() > 1) {
+				// need to open the search dialog with a prefilled list.
+				var idlist = "";
+				var myItems = Items.getItemsByXpath("//Item[@type='" + ActiveType + "']");
+				for (var m=0; m< myItems.getItemCount(); m++) {
+				   if (m==0)
+				   	idlist=myItems.getItemByIndex(m).getID();
+				   else
+				   	idlist+=","+myItems.getItemByIndex(m).getID();
+				}
+//DAL
+//				setTimeout('openItemBrowserFiltered("' + idlist + '")',1);
+				setTimeout('openItemBrowserFiltered("' + idlist + '","' + tbItemId + '")',1);
+//DAL
+				return;
+			}
+			if (Items.getItemCount() == 1) {
+				var Item = Items.getItemByIndex(0);
+
+//DAL
+                if (tbItemId == "findToItem") {
+                    //alert("2 in tbItemId == findToItem");
+                    updateToItem(Item);
+                    //alert("post updateToItem");
+                    return;
+                }
+                //DAL If this function is running from findToItem client, it has already returned. 
+                //      This point foward is for findItem only.
+                //      If in Bulk Change mode, set the From value with the results of the findItem
+                if (ActiveMode == "Bulk Change"){
+                    fromItem = Item;
+                    document.all.fromBox.value = Item.getProperty("item_number");
+                    toolbarControl.getActiveToolbar().getElement("toFrom").setSelected("To:");
+                }
+
+//DAL				
+				loadItem(Item);
+				return;
+			}
+		}
+		setTimeout('openItemBrowser("' + tbItemId + '")',1);
+		return;
+	}
+}
+
+
+function openItemBrowser(findType) {
+   var param = {aras:window.top.aras,itemtypeName:ActiveType};
+   var res = showModalDialog(top.aras.getScriptsURL()+'searchDialog.html', param, 'dialogHeight:450px; dialogWidth:950px; status:0; help:0; resizable:1');
+	if (res == undefined) return;
+	var qry = innovator.newItem();
+	qry.loadAML("<Item type='" + ActiveType + "' select='item_number,name' action='get' id='" + res.itemID + "'></Item>");
+	qry = qry.apply();
+	var Items = qry.getItemsByXPath("//Item[@type='" + ActiveType + "']");
+	if (Items.getItemCount() > 0) {
+		var Item = Items.getItemByIndex(0);
+//DAL
+        if (findType == "findToItem") {
+            updateToItem(Item);
+            return;
+        }
+//dal		
+		loadItem(Item);
+	}
+}
+
+function openItemBrowserFiltered(fakeProp, findType) {
+
+   var param = {aras:window.top.aras,itemtypeName:ActiveType, sourceItemTypeName:'ECR Affected Wizard Item',sourcePropertyName:'action', itemSelectedID:fakeProp };
+
+   var res = showModalDialog(top.aras.getScriptsURL()+'searchDialog.html', param, 'dialogHeight:450px; dialogWidth:950px; status:0; help:0; resizable:1');
+	if (res == undefined) return;
+	var qry = innovator.newItem();
+	qry.loadAML("<Item type='" + ActiveType + "' select='item_number,name' action='get' id='" + res.itemID + "'></Item>");
+	qry = qry.apply();
+	var Items = qry.getItemsByXPath("//Item[@type='" + ActiveType + "']");
+	if (Items.getItemCount() > 0) {
+		var Item = Items.getItemByIndex(0);
+//DAL
+        if (findType == "findToItem") {
+            updateToItem(Item);
+            return;
+        }
+//dal		
+		loadItem(Item);
+	}
+}
+
+function loadItem(Item) {
+	updateActiveType();
+	//  update the Active Box at the top
+	active_slot.innerHTML="Active " + ActiveType + ":<b>&nbsp;" + Item.getProperty("item_number") + " - " + Item.getProperty("name"," ") + "</b>";
+
+   currItem=Item.getID();
+   currType=ActiveType;
+	currName = Item.getProperty("name"," ");
+	currNumber=Item.getProperty("item_number"," ");
+
+	// test the Tab state and call the right routine to populate the Left Tree Grid
+	switch (currTabID) {
+		case "wu":
+			loadTreeWU(Item.getID(),Item.getType(),Item.getProperty("item_number"," "),Item.getProperty("name"," ") ," ")
+			break;
+		case "bom":
+			loadTreeBOM(Item.getID(),Item.getType(),Item.getProperty("item_number"," "),Item.getProperty("name"," ") ," ")
+			break;
+		case "hierarchywu":
+			loadTreeMultiWU(Item.getID(),Item.getType(),Item.getProperty("item_number"," "),Item.getProperty("name"," ") ," ")
+			break;
+		default:
+	}
+                	
+	affectedTreeControl.deselect();
+	requiredTreeControl.deselect();
+	notTreeControl.deselect();
+}
+
+//DAL
+//Added supporting function to reset the grid defaults when the clearGrid function is called. This 
+// function is also called from the HTML to initialize the grid.
+function setTreeControlDefaults(){
+	treeControl=document.tree;
+	treeControl.Delimeter = "|";
+	treeControl.DrawGrid = true;
+	treeControl.HeaderBGColor = "#d4d0c8";
+	treeControl.SelBGColor = "#0000ff";
+	treeControl.ColumnDraggable = "0";
+	treeControl.noSort = "1";
+	treeControl.ExpandRoot = "1";
+	treeControl.MultiSelect = "1";
+	treeControl.treeLines = "1";
+    treeControl.setColumnCount(4);
+	treeControl.setInitWidths("173|67|90|150");
+	treeControl.setHorAligns("LEFT|LEFT|CENTER|LEFT");
+    treeControl.SetHeaderCol(0,"Hierarchy");
+    treeControl.SetHeaderCol(1,"Type");
+    treeControl.SetHeaderCol(2,"Action");
+    treeControl.SetHeaderCol(3,"Description");
+    treeControl.Editable = true;
+    treeControl.SetColumnProperties("type=noedit",0);
+    treeControl.SetColumnProperties("type=noedit",2);
+    treeControl.SetColumnProperties("type=noedit",3);
+    treeControl.isTree=true;    
+}
+//dal
+
+function clearGrid(which) {
+	which.turnEditOff();
+	which.clear();
+    if (which.id = "tree"){
+        setTreeControlDefaults();
+    }
+//DAL
+// commented below and replaced with above which.clear and setTreeControlDefaults()
+//	var ids = which.getAllItemIds("|");
+// 	var id_array = ids.split("|");
+// 	for (var x = 0 ; x < id_array.length ; x++) {
+//		rowid = id_array[x];
+//		which.deleteRow(rowid);
+//	}
+//dal
+}
+
+// ============================================================================
+function setArrowContext(r,c) {
+	var action = treeControl.cells(r,2).getValue();
+   var rowIds = treeControl.getSelectedItemIds(';').split(';');
+
+    //At least one thing selected and the selected has no action... then enable all arrows 
+	if ((action=="" || rowIds.length > 1) && locked) {  // if many are selected,  don't try to give buttons smart context
+		document.all.userAddToAffected.disabled 	= false;
+		document.all.userAddToNotAffected.disabled = false;
+		document.all.userAddToRequired.disabled 	= false;
+		return;
+	}
+
+    //If selected has affected action, disable affected arrow
+	if (action =="Affected" && locked) {
+		document.all.userAddToAffected.disabled 	= true;
+		document.all.userAddToNotAffected.disabled = false;
+		document.all.userAddToRequired.disabled 	= false;
+		return;
+	}
+    //if selected has Nees Review action, disable needs review arrow	
+	if (action =="Needs Review" && locked) {
+		document.all.userAddToAffected.disabled 	= false;
+		document.all.userAddToNotAffected.disabled = false;
+		document.all.userAddToRequired.disabled 	= true;
+		return;
+	}
+    //if selected has Not Affected action, disable not affected arrow	
+	if (action =="Not Affected" && locked) {
+		document.all.userAddToAffected.disabled 	= false;
+		document.all.userAddToNotAffected.disabled = true;
+		document.all.userAddToRequired.disabled 	= false;
+		return;
+	}
+	document.all.userAddToAffected.disabled 	= true;
+	document.all.userAddToNotAffected.disabled = true;
+	document.all.userAddToRequired.disabled 	= true;
+}
+
+function addToTheRight(whichTree,whichTreeName) {
+	var rowId = treeControl.getSelectedId();
+	if (rowId==""){
+		document.all.userAddToAffected.disabled 	= true;
+		document.all.userAddToNotAffected.disabled = true;
+		document.all.userAddToRequired.disabled 	= true;
+		return;
+	}
+//DAL
+	if ((toItem == null || fromItem == null) && ActiveMode == "Bulk Change"){
+		alert("The wizard is configured for Bulk Change mode. You must identify the From and To values before adding an affected item.");
+	   return;
+	}
+//dal	
+	
+	//var whichTree = document.applets[whichTreeName];
+   var NewAffected="";
+   var rowId, rowIds = treeControl.getSelectedItemIds(';').split(';');
+	if (rowIds.length == 0) return;
+	for (var i = 0; i < rowIds.length; i++) {
+		rowId = rowIds[i];
+		var itemId     = treeControl.getUserData(rowId,"id");
+		var itemType   = treeControl.cells(rowId,1).getValue();
+		var itemNumber = treeControl.cells(rowId,0).getValue();
+		var itemName   = treeControl.cells(rowId,3).getValue();
+
+		// decide if the Item already exists in the target tree,  if yes,  NOOP
+		if ( !whichTree.isItemExists(itemId) ) {
+			// now we are sure the item is being moved to another tree than the one it is already in (if any)
+			// copy the item over,  and then call the function to update the Actions in the left treeControl.
+			if (whichTreeName == "affectedTreeControl") {
+//DAL
+                if (runSpartanBeforeAddChecks(itemId) == true) {
+//dal			
+				    if (NewAffected=="")
+					   NewAffected=itemId+";" +itemType;
+				    else
+					   NewAffected+= "|" + itemId+";" +itemType ;
+				    affectedTreeControl.addRow(itemId,itemType + "|"+ "Change" + "|"+ itemNumber + "|"+ itemName,itemId);
+//DAL
+                    if (ActiveMode == "Bulk Change") {
+                        affectedTreeControl.SetUserData(itemId,"FromId", fromItem.getId());
+                        affectedTreeControl.setUserData(itemId,"ToId", toItem.getId());
+                    }
+//dal
+				    requiredTreeControl.deleteRow(itemId);
+				    notTreeControl.deleteRow(itemId);
+				}
+			}
+			if (whichTreeName == "requiredTreeControl") {
+				requiredTreeControl.addRow(itemId,itemType + "|"+ itemNumber + "|"+ itemName,itemId);
+				affectedTreeControl.deleteRow(itemId);
+				notTreeControl.deleteRow(itemId);
+			}
+			if (whichTreeName == "notTreeControl") {
+				notTreeControl.addRow(itemId,itemType + "|"+ itemNumber + "|"+ itemName,itemId);
+				requiredTreeControl.deleteRow(itemId);
+				affectedTreeControl.deleteRow(itemId);
+			}
+		}
+	}
+	UpdateTreeActions();
+
+	// run rule #1
+	if (NewAffected != "") {
+		//alert('Running Rule#1 against: ' + NewAffected);
+		runRule1(NewAffected);
+	}
+}
+
+//DAL
+function runSpartanBeforeAddChecks(itemIdToAdd) {
+// itemIdToAdd is the selected object in the tree
+// toItem and fromItem are variables set to define To and From
+
+
+    // check that from object is a child of current selected
+    // check that selected is not on a running ECN    
+
+    var returnValue = false;
+
+    //if in bulk change mode, run check for whether proposed affected item has a child that is the FROM object
+    if (ActiveMode == "Bulk Change") {
+    //run search of selected with relationship to FROM
+        var qry = innovator.newItem();
+		// find if FROM is a child of selected. If below search returns objects, the its ok to add the selected
+        qry.loadAML("<Item type='Part' select='item_number,name' action='get'><is_current>1</is_current><id>" + itemIdToAdd + "</id><Relationships><Item type='Part BOM' action='get' select='related_id'><related_id>" + fromItem.getId() + "</related_id></Item></Relationships></Item>");
+   	   qry = qry.apply();
+	   var Items = qry.getItemsByXPath("//Result/Item[@type='Part']");
+        if (Items.getItemCount == 0) {
+            //proposed affected item does not have a child this is the FROM item, return false
+            return returnValue;
+        }
+    }
+    //If the wizard is runnin on an ECN, run search to see if the object is on a running ECN
+    if (ParentType == "ECN") {
+        qry = innovator.newItem();
+        qry.loadAML("<Item type='ECN' action='get'><state condition='ne'>Released</state><Relationships><Item type='ECN Affected Item' action='get' select='related_id'><related_id><Item type='Affected Item' action='get'><affected_id>" + itemIdToAdd + "</affected_id></Item></related_id></Item> </Relationships></Item>");
+        qry = qry.apply();
+    	var RunningECNs = qry.getItemsByXPath("//Result/Item[@type='ECN']");
+        if (RunningECNs.getItemCount > 0) {
+            
+            alert("Item " + itemIdToAdd + " to add is on a running ECN");
+            return returnValue;
+        }
+    }    
+    returnValue = true;
+    return returnValue;
+}
+//dal
+
+function runRule1(idList) {   //  any new item added to the Affected table,  run a one-level where-used and add the immediate parents to needs review
+	if (idList=="") return;
+	var statusId = top.aras.showStatusMessage('   Running Rule 1 ...', '../../images/Animated/ProgressSmall.gif');
+
+	var action, actions = idList.split('|')
+	if (actions.length == 0) return
+	for (var i = 0; i < actions.length; i++) {  //  -1 because there is a trailing |
+		action = actions[i];
+		var itemData = action.split(';')
+		if (itemData.length < 2) {
+			//alert('Rule 1 idList error: ' + idList);
+			top.aras.clearStatusMessage (statusId);
+			return;
+		}
+	   var itemId = itemData[0];
+	   var itemType = itemData[1];
+
+		var qry = innovator.newItem();
+		// finding any Parts that have a relationship to this Thing
+		if (itemType=='Part')
+			qry.loadAML("<Item type='Part' select='item_number,name' action='get'><is_current>1</is_current><Relationships><Item type='Part BOM' action='get' select='related_id'><related_id>" + itemId + "</related_id></Item></Relationships></Item>");
+		else
+			qry.loadAML("<Item type='Part' select='item_number,name' action='get'><is_current>1</is_current><Relationships><Item type='Part " + itemType + "' action='get' select='related_id'><related_id>" + itemId + "</related_id></Item></Relationships></Item>");
+
+		qry = qry.apply();
+		var Items = qry.getItemsByXPath("//Result/Item[@type='Part']");
+		for (var j=0; j < Items.getItemCount(); j++) {
+			var Item = Items.getItemByIndex(j);
+			var type	 	= 'Part';
+			var id	 	= Item.getID();
+			var number  = Item.getProperty("item_number");
+			var name    = Item.getProperty("name");
+			// RULE   add this parent Part to the Review Required List
+			//  if it is not already on the review required list
+			//  if it is not already on the affected list
+			//  if it is not already on the notAffected List  (ASK GAVLAK ABOUT THIS ONE);
+			if (!affectedTreeControl.isItemExists(id) && !requiredTreeControl.isItemExists(id) && !notTreeControl.isItemExists(id))
+		 			requiredTreeControl.addRow(id,type + "|"+ number + "|"+ name,id);
+		}
+	}
+	UpdateTreeActions();
+	top.aras.clearStatusMessage (statusId);
+}
+
+function loadTreeMultiWU(id,type,item_number, name) {
+	var statusId = top.aras.showStatusMessage('   Loading ...', '../../images/Animated/ProgressSmall.gif');
+	uniqueGridId=0;
+	clearGrid(treeControl);
+
+	var MyId;
+	var qry = innovator.applyMethod("CMII-Fetch-WU", "<Item type='" + type + "' id='" + id + "'><item_number>" + item_number + "</item_number><name>" + name + "</name></Item>");
+   if (qry.isError()) {
+		alert(qry.getErrorDetail() );
+		return;
+	}
+   var Items = qry.getItemsByXPath("//Result/Item");
+  	for (var i=0; i < Items.getItemCount(); i++) {
+	   var Item = Items.getItemByIndex(i);
+		var MyId = Item.getID() + uniqueGridId++;
+	   treeControl.insertRoot(MyId, Item.getAttribute("item_number"," ")+ "|" + Item.getType() + "| " + "|" + Item.getAttribute("name"," "),MyId );
+	   treeControl.setUserData(MyId,"id",Item.getID());
+		treeControl.openItem(MyId);
+		loadTreeMultiWUrecursion(MyId,Item);
+	 }
+	UpdateTreeActions();
+	top.aras.clearStatusMessage (statusId);
+}
+
+function loadTreeMultiWUrecursion(ParentId, ParentItem) {
+   var Items = ParentItem.getItemsByXPath("Item");
+  	for (var i=0; i < Items.getItemCount(); i++) {
+	   var Item = Items.getItemByIndex(i);
+		var MyId = Item.getID() + uniqueGridId++;
+
+	   treeControl.insertNewChild(ParentId,MyId, Item.getAttribute("item_number"," ") +"|"+ Item.getType() +"| " + "|"+ Item.getAttribute("name"," ") ,MyId);
+   	treeControl.setUserData(MyId,"id",Item.getID());
+
+		loadTreeMultiWUrecursion(MyId,Item);
+	 }
+}
+
+
+function loadTreeBOM(id,type,item_number, name) {
+	uniqueGridId=0;
+	clearGrid(treeControl);
+   if (type!='Part') return;  // Only makes sense to get a BOM of a Part
+	var statusId = top.aras.showStatusMessage('   Loading ...', '../../images/Animated/ProgressSmall.gif');
+	var MyPid = id + uniqueGridId++;
+	treeControl.insertRoot(MyPid, item_number +"|"+ type +"| "  + "|"+ name,MyPid);
+	treeControl.setUserData(MyPid,"id",id);
+	var qry = innovator.newItem();
+	qry.loadAML("<Item type='Part' action='get' id='" + id + "' select='id'><Relationships><Item type='Part BOM' select='id,related_id(item_number,name)'></Item><Item type='Part Document' select='id,related_id(item_number,name)'></Item></Relationships></Item>");
+   qry = qry.apply();
+   var Items = qry.getItemsByXPath("//Item[@type='Part BOM']");  	for (var i=0; i < Items.getItemCount(); i++) {
+	   var BomItem = Items.getItemByIndex(i);
+		var PartItem= BomItem.getPropertyItem("related_id");
+
+		var MyCid = PartItem.getID() + uniqueGridId++;
+		treeControl.insertNewChild(MyPid,MyCid, PartItem.getProperty("item_number") +"|"+ "Part" +"| " + "|"+ PartItem.getProperty("name"),MyCid);
+		treeControl.setUserData(MyCid,"id",PartItem.getID());
+	}
+   var Items = qry.getItemsByXPath("//Item[@type='Part Document']");
+  	for (var i=0; i < Items.getItemCount(); i++) {
+	   var BomItem = Items.getItemByIndex(i);
+		var DocItem=  BomItem.getPropertyItem("related_id");
+
+		var MyCid = DocItem.getID() + uniqueGridId++;
+		treeControl.insertNewChild(MyPid,MyCid, DocItem.getProperty("item_number") +"|"+ "Document" +"|" + " " + "|"+ DocItem.getProperty("name"),MyCid);
+		treeControl.setUserData(MyCid,"id",DocItem.getID());
+	}
+	UpdateTreeActions();
+  	treeControl.openItem(MyPid);
+	top.aras.clearStatusMessage (statusId);
+}
+
+function loadTreeWU(id,type,item_number, name) {
+	uniqueGridId=0;
+	clearGrid(treeControl);
+	var statusId = top.aras.showStatusMessage('   Loading ...', '../../images/Animated/ProgressSmall.gif');
+
+	var qry = innovator.newItem();
+	if (type=='Part')
+		qry.loadAML("<Item type='Part' select='item_number,name' action='get'><is_current>1</is_current><Relationships><Item type='Part BOM' action='get' select='related_id'><related_id>" + id + "</related_id></Item></Relationships></Item>");
+	else
+		qry.loadAML("<Item type='Part' select='item_number,name' action='get'><is_current>1</is_current><Relationships><Item type='Part " + type + "' action='get' select='related_id'><related_id>" + id + "</related_id></Item></Relationships></Item>");
+   qry = qry.apply();
+   var Items = qry.getItemsByXPath("//Result/Item[@type='Part']");
+
+   
+  	for (var i=0; i < Items.getItemCount(); i++) {
+	   var Item = Items.getItemByIndex(i);
+
+	   var MyPid = Item.getID() + uniqueGridId++;
+	   Item.setAttribute("gid", MyPid)
+//DAL
+// commented out below treeControl lines and replaced with XML loading. Added the IF as a way of seeing the 
+//      tree loading performance different between row-by-row and XML. Revise mode would load row-by-row
+//      and Bulk Change mode wouldd load via XML	   
+//	   if (ActiveMode == "Revise") {
+//            treeControl.insertRoot(MyPid, Item.getProperty("item_number"," ")+ "|" + "Part" + "| " + "|" + Item.getProperty("name"," "),MyPid );
+//            treeControl.setUserData(MyPid,"id",Item.getID());
+//       }
+//dal
+       var myChild = Item.getItemsByXpath("Relationships/Item/related_id/Item")
+       myChild = myChild.getItemByIndex(0)
+	   var myRid = id + uniqueGridId++;
+       myChild.setAttribute("gid", myRid)
+//DAL
+// commented out below treeControl lines and replaced with XML loading. Added the IF as a way of seeing the 
+//      tree loading performance different between row-by-row and XML. Revise mode would load row-by-row
+//      and Bulk Change mode wouldd load via XML	   
+//	   if (ActiveMode == "Revise") {       
+//    	   treeControl.insertNewChild(MyPid,myRid, item_number +"|"+ type +"| " + "|"+ name ,myRid);
+//           treeControl.setUserData(myRid,"id",id);
+//    	   treeControl.openItem(MyPid);
+//	   }
+//dal
+
+
+	}
+	if (Items.getItemCount() ==0 ) {
+	   var MyPid =id + uniqueGridId++;
+	   treeControl.insertRoot(MyPid, item_number+ "|" + type + "| " + "|" + name,MyPid );
+	   treeControl.setUserData(MyPid,"id",id);
+	}
+	else
+	{
+//DAL
+//xml loading
+// Added the below IF as a way of seeing the performnce difference between row-by-row and XML loading.
+//      Revise mode was row-by-row and Bulk Change was XML
+//  	   if (ActiveMode == "Bulk Change") {
+
+        var gridIN=new ActiveXObject("Msxml2.DOMDocument.4.0");
+        var gridStyle=new ActiveXObject("Msxml2.DOMDocument.4.0");
+    
+        gridIN.loadXML(Items.dom.xml);
+        gridStyle.loadXML(treeStyleIn);
+        var gridDisplay = gridIN.transformNode(gridStyle);
+        treeControl.initXML(gridDisplay);
+        treeControl.ExpandAll();
+//        }
+//xml loading end        
+        
+//dal  	   
+	}
+
+	UpdateTreeActions();
+	top.aras.clearStatusMessage (statusId);
+}
+
+function UpdateTreeActions() {
+	// clear all selections to clean up
+	onRowSelect();
+
+	// loop thru the tree that is displayed and check for already dispositioned Items
+   var rowid="";
+   var itemId="";
+	var ids =treeControl.getAllItemIds("|");
+  	var id_array = ids.split("|");
+	for (var x = 0 ; x < id_array.length ; x++) {
+		rowid = id_array[x];
+		itemId = treeControl.getUserData(rowid,"id");
+		if (affectedTreeControl.isItemExists(itemId))  {
+			treeControl.cells(rowid,2).setValue("Affected");
+		} else {
+			if (notTreeControl.isItemExists(itemId)) {
+				treeControl.cells(rowid,2).setValue("Not Affected");
+			} else {
+				if (requiredTreeControl.isItemExists(itemId))
+					treeControl.cells(rowid,2).setValue("Needs Review");
+			}
+		}
+	}
+}
+
+function onRowSelect() {
+	requiredTreeControl.deselect();
+	notTreeControl.deselect();
+	affectedTreeControl.deselect();
+	treeControl.deselect();
+}
+
+function onAffectedClick() {
+	onClick(affectedTreeControl,affectedTreeControl.cells(affectedTreeControl.getSelectedId(),2).getValue(),affectedTreeControl.cells(affectedTreeControl.getSelectedId(),3).getValue());
+}
+function onRequiredClick() {
+	onClick(requiredTreeControl,requiredTreeControl.cells(requiredTreeControl.getSelectedId(),1).getValue(),requiredTreeControl.cells(requiredTreeControl.getSelectedId(),2).getValue());
+}
+function onNotClick() {
+	onClick(notTreeControl,notTreeControl.cells(notTreeControl.getSelectedId(),1).getValue(),notTreeControl.cells(notTreeControl.getSelectedId(),2).getValue());
+}
+
+function onClick(whichTree,whichItemNumber,whichName) {
+	updateActiveType();
+	var r = whichTree.getSelectedId();
+	ActiveType = whichTree.cells(r,0).getValue();
+	currItem=r ;
+	currType=ActiveType
+
+   currName=whichName;
+   currNumber = whichItemNumber;
+	active_slot.innerHTML="Active " + ActiveType + ":<b>&nbsp;" + currNumber + " - " + currName + "</b>";
+	// test the Tab state and call the right routine to populate the Left Tree Grid
+	switch (currTabID) {
+		case "wu":
+			loadTreeWU(r,ActiveType,whichItemNumber,whichName)
+			break;
+		case "bom":
+			loadTreeBOM(r,ActiveType,whichItemNumber,whichName)
+			break;
+		case "hierarchywu":
+			loadTreeMultiWU(r,ActiveType,whichItemNumber,whichName)
+			break;
+		default:
+	}
+}
+function onTreeDoubleClick() {
+	updateActiveType();
+	whichTree = treeControl;
+	var r = whichTree.getSelectedId();
+	ActiveType      = whichTree.cells(r,1).getValue();
+	whichItemNumber = whichTree.cells(r,0).getValue();
+	whichName       = whichTree.cells(r,3).getValue();
+	// note r is the id of the row in order to retrieve the cell contents
+	// now re-assign r to be the real item ID
+	r = whichTree.getUserData(r,"id");
+
+	currItem = r;
+	currType = ActiveType;
+
+   currName=whichName;
+   currNumber = whichItemNumber;
+	active_slot.innerHTML="Active " + ActiveType + ":<b>&nbsp;" + currNumber + " - " + currName + "</b>";
+	// test the Tab state and call the right routine to populate the Left Tree Grid
+	switch (currTabID) {
+		case "wu":
+			loadTreeWU(r,ActiveType,whichItemNumber,whichName)
+			break;
+		case "bom":
+			loadTreeBOM(r,ActiveType,whichItemNumber,whichName)
+			break;
+		case "hierarchywu":
+			loadTreeMultiWU(r,ActiveType,whichItemNumber,whichName)
+			break;
+		default:
+	}
+	
+//DAL	
+                if (ActiveMode == "Bulk Change"){
+                    fromItem = Item;
+                    document.all.fromBox.value = Item.getProperty("item_number");
+                    toolbarControl.getActiveToolbar().getElement("toFrom").setSelected("To:");
+                }	
+//dal                
+}
+function OnAffectedEditCell(event,row,col)  {
+	if (event==1) 	return;  // this is ongoing typing event - ignore it
+
+	if (event==0) { //  this is START of edit event
+	   if (!locked) return false;
+		if (col==1)  { //  Pull down List
+			affectedTreeControl.setComboList('', 1);
+      	affectedTreeControl.setColumnProperties('type=COMBO,list=1', col);
+			affectedTreeControl.cells(row,col).setCombo(ChangeTypes,ChangeTypes);
+			return true;
+		}
+		return false;
+	}
+	if (event==2) {    //  end of editing -   save the changes
+	}
+}
+
+
+function updateActiveType() {
+	var  el    = toolbarControl.getActiveToolbar().getElement('type');
+	ActiveType = el.getItem(el.getSelectedIndex() );
+}
+
+function openItem(itemType,itemId) {
+	var itm=top.aras.getItemById(itemType,itemId ,0);
+	top.aras.uiShowItemEx(itm,undefined,true);
+}
+function onMenuInit(whichTree) {
+	whichTree.menuRemoveAll();
+	whichTree.menuAdd("Open Item");
+}
+function onMenu(item,r,c) {
+	openItem(treeControl.cells(r,1).getValue(), treeControl.getUserData(r,"id") );
+}
+function onMenuAffected(id,r,c) {
+	openItem(affectedTreeControl.cells(r,0).getValue(),r);
+}
+function onMenuRequired(id,r,c) {
+	openItem(requiredTreeControl.cells(r,0).getValue(),r);
+}
+function onMenuNot(id,r,c) {
+	openItem(notTreeControl.cells(r,0).getValue(),r);
+}
+
+// ============================= control callbacks =============================
+</script>
+
+<script language="jscript" for="tree" event="GridStart(isSuccess)">
+	// ----  MAIN TREE -----------------------------------------------------
+//DAL	
+// commented out below treeControls. Addedd call to setTreeControlDefaults
+	setTreeControlDefaults();
+//	treeControl=document.tree;
+//	treeControl.Delimeter = "|";
+//	treeControl.DrawGrid = true;
+//	treeControl.HeaderBGColor = "#d4d0c8";
+//	treeControl.SelBGColor = "#0000ff";
+//	treeControl.ColumnDraggable = "0";
+//	treeControl.noSort = "1";
+//	treeControl.ExpandRoot = "1";
+//	treeControl.MultiSelect = "1";
+//	treeControl.treeLines = "1";
+//   treeControl.setColumnCount(4);
+//	treeControl.setInitWidths("173|67|90|150");
+//	treeControl.setHorAligns("LEFT|LEFT|CENTER|LEFT");
+//   treeControl.SetHeaderCol(0,"Hierarchy");
+//   treeControl.SetHeaderCol(1,"Type");
+//   treeControl.SetHeaderCol(2,"Action");
+//   treeControl.SetHeaderCol(3,"Description");
+//   treeControl.Editable = true;
+//   treeControl.SetColumnProperties("type=noedit",0);
+//   treeControl.SetColumnProperties("type=noedit",2);
+//   treeControl.SetColumnProperties("type=noedit",3);
+//   treeControl.isTree=true;
+//dal
+</script>
+
+<script language="jscript" for="tree" event="GridClick(rowId, col)">
+  setArrowContext(rowId, col);
+</script>
+<script language="jscript" for="tree" event="GridDoubleClick(rowId)">
+  onTreeDoubleClick(rowId);
+</script>
+<script language="jscript" for="tree" event="GridMenuInit(rowId, col, p)">
+  onMenuInit(tree);
+</script>
+<script language="jscript" for="tree" event="GridMenuClick(m, rowId, col)">
+  onMenu(m, rowId, col);
+</script>
+<script language="jscript" for="tree" event="GridEditCell(mode, rowID, col)">
+    return false;
+</script>
+
+<script language="jscript" for="affectedTree" event="GridStart(isSuccess)">
+	// ----  AFFECTED TREE -----------------------------------------------------
+	affectedTreeControl=document.affectedTree;
+	affectedTreeControl.Delimeter = "|";
+	affectedTreeControl.DrawGrid = true;
+	affectedTreeControl.HeaderBGColor = "#d4d0c8";
+	affectedTreeControl.SelBGColor = "#0000ff";
+	affectedTreeControl.ColumnDraggable = false;
+	affectedTreeControl.noSort = true;
+	affectedTreeControl.treeLines = "1";
+   affectedTreeControl.setColumnCount(4);
+	affectedTreeControl.setInitWidths("60|50|60|130");
+	affectedTreeControl.setHorAligns("LEFT|LEFT|LEFT|LEFT");
+   affectedTreeControl.SetHeaderCol(0,"Type");
+   affectedTreeControl.SetHeaderCol(1,"Action");
+   affectedTreeControl.SetHeaderCol(2,"Identifier");
+   affectedTreeControl.SetHeaderCol(3,"Description");
+   affectedTreeControl.Editable = true;
+   affectedTreeControl.SetColumnProperties("type=noedit",0);
+   affectedTreeControl.SetColumnProperties("type=noedit",2);
+   affectedTreeControl.SetColumnProperties("type=noedit",3);
+   isAffectedTree = true;
+</script>
+<script language="jscript" for="affectedTree" event="GridClick(rowId, col)">
+  onAffectedClick(rowId, col);
+  affectedTreeControl.setSelectedRow(rowId, false, false);
+  return true;
+</script>
+<script language="jscript" for="affectedTree" event="GridDoubleClick(rowId)">
+</script>
+<script language="jscript" for="affectedTree" event="GridMenuInit(rowId, col, p)">
+  onMenuInit(affectedTree);
+</script>
+<script language="jscript" for="affectedTree" event="GridMenuClick(m, rowId, col)">
+  onMenuAffected(m, rowId, col);
+</script>
+<script language="jscript" for="affectedTree" event="GridEditCell(mode, rowID, col)">
+  var res = OnAffectedEditCell(mode, rowID, col);
+  return res;
+</script>
+
+<script language="jscript" for="requiredTree" event="GridStart(isSuccess)">
+	// ----  REQUIRED TREE -----------------------------------------------------
+	requiredTreeControl=document.requiredTree;
+	requiredTreeControl.Delimeter = "|";
+	requiredTreeControl.DrawGrid = true;
+	requiredTreeControl.HeaderBGColor = "#d4d0c8";
+	requiredTreeControl.SelBGColor = "#0000ff";
+	requiredTreeControl.ColumnDraggable = false;
+	requiredTreeControl.noSort = true;
+	requiredTreeControl.treeLines = "1";
+   requiredTreeControl.setColumnCount(3);
+	requiredTreeControl.setInitWidths("60|60|180");
+	requiredTreeControl.setHorAligns("LEFT|LEFT|LEFT");
+   requiredTreeControl.SetHeaderCol(0,"Type");
+   requiredTreeControl.SetHeaderCol(1,"Identifier");
+   requiredTreeControl.SetHeaderCol(2,"Description");
+   requiredTreeControl.Editable = true;
+   requiredTreeControl.SetColumnProperties("type=noedit",0);
+   requiredTreeControl.SetColumnProperties("type=noedit",1);
+   requiredTreeControl.SetColumnProperties("type=noedit",2);
+   isRequiredTree = true
+</script>
+<script language="jscript" for="requiredTree" event="GridClick(rowId, col)">
+  onRequiredClick(rowId, col);
+  requiredTreeControl.setSelectedRow(rowId, false, false);
+  return true;
+</script>
+<script language="jscript" for="requiredTree" event="GridDoubleClick(rowId)">
+</script>
+<script language="jscript" for="requiredTree" event="GridMenuInit(rowId, col, p)">
+  onMenuInit(requiredTree);
+</script>
+<script language="jscript" for="requiredTree" event="GridMenuClick(m, rowId, col)">
+  onMenuRequired(m, rowId, col);
+</script>
+<script language="jscript" for="requiredTree" event="GridEditCell(mode, rowID, col)">
+
+</script>
+
+<script language="jscript" for="notTree" event="GridStart(isSuccess)">
+	// ----  NOT TREE -----------------------------------------------------
+	notTreeControl=document.notTree;
+	notTreeControl.Delimeter = "|";
+	notTreeControl.DrawGrid = true;
+	notTreeControl.HeaderBGColor = "#d4d0c8";
+	notTreeControl.SelBGColor = "#0000ff";
+	notTreeControl.ColumnDraggable = false;
+	notTreeControl.noSort = true;
+	notTreeControl.treeLines = "1";
+   notTreeControl.setColumnCount(3);
+	notTreeControl.setInitWidths("60|60|180");
+	notTreeControl.setHorAligns("LEFT|LEFT|LEFT");
+   notTreeControl.SetHeaderCol(0,"Type");
+   notTreeControl.SetHeaderCol(1,"Identifier");
+   notTreeControl.SetHeaderCol(2,"Description");
+   notTreeControl.Editable = true;
+   notTreeControl.SetColumnProperties("type=noedit",0);
+   notTreeControl.SetColumnProperties("type=noedit",1);
+   notTreeControl.SetColumnProperties("type=noedit",2);
+   isNotTree=true;
+
+   affectedOnLoad();
+</script>
+<script language="jscript" for="notTree" event="GridClick(rowId, col)">
+  onNotClick(rowId, col);
+  notTreeControl.setSelectedRow(rowId, false, false);
+  return true;
+</script>
+<script language="jscript" for="notTree" event="GridDoubleClick(rowId)">
+</script>
+<script language="jscript" for="notTree" event="GridMenuInit(rowId, col, p)">
+  onMenuInit(notTree);
+</script>
+<script language="jscript" for="notTree" event="GridMenuClick(m, rowId, col)">
+  onMenuNot(m, rowId, col);
+</script>
+<script language="jscript" for="notTree" event="GridEditCell(mode, rowID, col)">
+</script>
+
+<script language="jscript" for="toolbar" event="OnChange(tbItem)">
+  updateUi();
+</script>
+
+
+<script for="tabbar" event="OnStart()">
+  tabbar.addTab('bom', 'Structure View');
+  tabbar.addTab('wu', 'Direct Where-Used');
+  tabbar.addTab('hierarchywu', 'Summary Compressed Where-Used');
+  currTabID='wu';
+  tabbar.selectTab(currTabID)
+</script>
+<script for="tabbar" event="OnClick(TabId)">
+   if (currTabID==TabId) return true;
+	currTabID = TabId;
+	var id="";
+	if (currItem=="" ) return;
+
+	id = currItem;
+	ActiveType=currType;
+
+	if (currTabID == "wu")
+	{
+		loadTreeWU(id,ActiveType,currNumber,currName)
+	}
+	if (currTabID == "bom")
+	{
+		loadTreeBOM(id,ActiveType,currNumber,currName)
+	}
+	if (currTabID == "hierarchywu")
+	{
+		loadTreeMultiWU(id,ActiveType,currNumber,currName)
+	}
+</script>
+
+<script language="jscript" for="toolbar" event="Onload()">
+  toolbarControl = document.toolbar;
+  toolbarControl.setImageBase("../cbin/");
+  toolbarControl.loadToolbarFromStr('<toolbarapplet bgcolor="#d4d0c8" on_click="onToolbarClick" buttonstyle="windows" buttonsize="26,22" top_border="0" bottom_border="1" font="Arial-8"><toolbar id="main"><choice id="mode" size="12" font="Arial-8"></choice><separator/><edit id="item" label="Lookup:" text="" size="20" font="Arial-8"/><separator/><choice id="type" size="15" font="Arial-8"></choice><separator/><button image="icons/20x20keysearch.gif" id="findItem" tooltip="New Search" statusmsg="Search for a Part/Document"></button><separator/><choice id="toFrom" size="12" font="Arial-8"></choice><edit id="toItem" text="" size="20" font="Arial-8"/><button image="icons/20x20keysearch.gif" id="findToItem" tooltip="New To Item Search" statusmsg="Search for to item"></button><separator/><button image="../images/icons/20x20/20x20_checkmark.gif" id="save" tooltip="Save Changes and Exit" statusmsg="Save Changes and Exit"></button><button image="../images/icons/20x20/20x20_exit_door.gif" id="exit" tooltip="Exit Without Saving"  statusmsg="Exit Without Saving"></button></toolbar></toolbarapplet>');
+
+  toolbarControl.show();
+  active_slot.innerHTML="Active Item:";
+
+</script>
+
+
+
+
+<script language="jscript" for="toolbar" event="Onclick(tbItem)">
+  onToolbarClick(tbItem);
+</script>
+
+<style>
+#active_slot {
+	height:28px;
+	left: 10px;
+	top: 28px;
+	position: absolute;
+	width:400px;
+	display: block;
+	border-bottom: 1px solid #000000; 
+}
+#toolbar_slot {
+	height:28px;
+	left: 10px;
+	top: 0px;
+	position: absolute;
+   width:750px;
+	display: block;
+}
+#main_grid {
+	left: 10px;
+	top: 52px;
+	position: absolute;
+   width:480px;
+   height:520px;
+	display: block;
+}
+#top_right {
+	left: 490px;
+	top: 29px;
+	position: absolute;
+   width:400px;
+	display: block;
+	height: 160px;
+}
+#middle_right {
+	left: 490px;
+	top: 208px;
+	position: absolute;
+   width:400px;
+	height: 160px;
+	display: block;
+}
+#lower_right {
+	left: 490px;
+	top: 388px;
+	position: absolute;
+   width:390px;
+	height: 160px;
+	display: block;
+}
+</style>
+</head>
+<body topmargin="0" leftmargin="7" rightmargin="1" bottommargin="0" style="background-color: ButtonFace;">
+
+<div id="active_slot">
+		&nbsp;
+</div>
+<div id="toolbar_slot">
+		<comment id="tb_commented">
+			<object id="toolbar"
+			  style="width:100%;height:26px"
+			  classid="../cbin/Toolbar.dll#Aras.Client.Controls.Toolbar" >
+			</object>
+		</comment>
+		<script>
+		WriteUncommentedObject("tb_commented");
+		</script>
+</div>
+
+<div id="main_grid">
+<br/>
+From:&nbsp;<input id="fromBox" disabled="disabled"/>&nbsp;
+To:&nbsp;<input id="toBox" disabled="disabled"/>&nbsp;
+<br/>
+<br/>
+
+		<comment id="tabbar_commented">
+		<object id="tabbar"
+		  classId="../cbin/SimpleTabbar.dll#Aras.Client.Controls.SimpleTabbar"
+		  style="width:480px; height:26px;">
+		</object>
+		</comment>
+		<script>
+		WriteUncommentedObject("tabbar_commented");
+		</script>
+		<br/>
+		<comment id="tree_commented">
+		 <object id="tree" width="480px" height="490px"
+			class="loadedApplet"
+			classid="../cbin/TreeTable.dll#Aras.Client.Controls.TreeGridContainer" VIEWASTEXT>
+		 </object>
+		</comment>
+		<script>
+		WriteUncommentedObject("tree_commented");
+		</script>
+</div>
+<div id="top_right">
+	<table  border="0" cellpadding="0" cellspacing="3" >
+	<tr valign="middle">
+		<td width="30">
+			<input type="button" value=">>>" size="4" name="userAddToAffected" id="userAddToAffected" disabled="true" onclick="addToTheRight(affectedTreeControl,'affectedTreeControl');">
+		</td>
+		<td width="320">
+			<font size="3"><b>Affected Items</b></font>
+			<comment id="affectedTree_commented">
+				 <object id="affectedTree" width="320px" height="160px"
+					class="loadedApplet"
+					classid="../cbin/TreeTable.dll#Aras.Client.Controls.GridContainer" VIEWASTEXT>
+				 </object>
+			</comment>
+			<script>
+			WriteUncommentedObject("affectedTree_commented");
+			</script>
+		</td>
+	</tr>
+	</table>
+</div>
+<div id="middle_right">	
+	<table  border="0" cellpadding="0" cellspacing="3" >
+		<tr valign="middle">
+			<td width="30">
+				<input type="button" value=">>>" name="userAddToRequired" id="userAddToRequired" disabled="true"  onclick="addToTheRight(requiredTreeControl,'requiredTreeControl');">
+			</td>
+			<td>
+				<font size="3"><b>Needs Review</b></font>
+				<comment id="requiredTree_commented">
+					 <object id="requiredTree" width="320px" height="160px"
+						class="loadedApplet"
+						classid="../cbin/TreeTable.dll#Aras.Client.Controls.GridContainer" VIEWASTEXT>
+					 </object>
+				</comment>
+				<script>
+				WriteUncommentedObject("requiredTree_commented");
+				</script>
+			</td>
+		</tr>
+	</table>
+</div>
+<div id="lower_right">	
+	<table  border="0" cellpadding="0" cellspacing="3" >
+		<tr valign="middle">
+			<td width="30">
+				<input type="button" value=">>>" name="userAddToNotAffected" id="userAddToNotAffected" disabled="true" onclick="addToTheRight(notTreeControl,'notTreeControl');">
+			</td>
+			<td>
+				<font size="3"><b>Not Affected</b></font>
+				<comment id="notTree_commented">
+					 <object id="notTree" width="320px" height="160px"
+						class="loadedApplet"
+						classid="../cbin/TreeTable.dll#Aras.Client.Controls.GridContainer" VIEWASTEXT>
+					 </object>
+				</comment>
+				<script>
+				WriteUncommentedObject("notTree_commented");
+				</script>
+			</td>
+		</tr>
+	</table>
+</div>
+</body>
+</html>]]></html_code>
+      <is_disabled>0</is_disabled>
+      <is_visible>1</is_visible>
+      <list_no_blank>0</list_no_blank>
+      <name>html0</name>
+      <positioning>absolute</positioning>
+      <sort_order>128</sort_order>
+      <source_id keyed_name="AF7837A4CE9848ECAD1B1FA282616A4B" type="Body">AF7837A4CE9848ECAD1B1FA282616A4B</source_id>
+      <tab_stop>1</tab_stop>
+      <x>0</x>
+      <y>0</y>
+     </Item>
+    </Relationships>
+   </Item>
+  </Relationships>
+ </Item>
+</AML>

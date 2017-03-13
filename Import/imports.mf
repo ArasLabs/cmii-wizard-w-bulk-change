@@ -1,0 +1,6 @@
+<imports>
+  <package name="com.aras.innovator.solution.PLM" path="PLM\Import" />
+  <package name="CMII Affected Item Wiz with Bulk Change" path="CMII Affected Item Wiz with Bulk Change\Import">
+    <dependson name="com.aras.innovator.solution.PLM" />
+  </package>
+</imports>
